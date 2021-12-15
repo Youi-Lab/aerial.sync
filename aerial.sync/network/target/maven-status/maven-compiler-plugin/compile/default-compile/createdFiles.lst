@@ -1,0 +1,5 @@
+aerial/sync/network/SensorData.class
+aerial/sync/network/User.class
+aerial/sync/network/NetworkController.class
+aerial/sync/network/NetworkApplication.class
+aerial/sync/network/Sensor.class
