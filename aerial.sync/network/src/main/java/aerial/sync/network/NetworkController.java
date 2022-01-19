@@ -36,6 +36,19 @@ public class NetworkController {
 
 	static String aerialSyncSensorsDb = "aerialSyncSensors";
 	static String aerialSyncUsersDb = "aerialSyncUsers";
+
+    public static boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        try {
+            int i = Integer.parseInt(strNum);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
+
 	 
 	@PostMapping("/sensors/greetsensor")
 	public String greetsensorpar(@RequestParam String serial,
@@ -62,7 +75,9 @@ public class NetworkController {
 			return  "Sensor " + json +  " is already in the data base.";
 		}
 	} // curl -X POST "http://localhost:8080/aerialsync/sensors/greetsensor" -F "serial=IPI-SENSOR-00000100"  -F "type=PM2.5" -F "units=um/m3" -F "token=1234" -F "latlong= 111,222" -F "metadata= my new sensor"
+      // curl -X POST "http://192.168.6.61:8083/aerialsync/sensors/greetsensor" -F "serial=IPI-SENSOR-00000100"  -F "type=PM2.5" -F "units=um/m3" -F "token=1234" -F "latlong= 111,222" -F "metadata= my new sensor"
 
+   
 	@PostMapping("/sensors/greetsensorjson")
 	public String greetsensorjson( @RequestBody Sensor sensor) {
 
@@ -89,7 +104,9 @@ public class NetworkController {
 	                          @RequestParam String datetime, 
 							  @RequestParam String val) {
 
-       // Create mongo client
+       
+	   
+	   // Create mongo client
 		MongoTemplate mongoTemplate = new MongoTemplate(new SimpleMongoClientDbFactory(MongoClients.create(), aerialSyncSensorsDb) );
 
         // Check if sensor is already in database
@@ -97,6 +114,13 @@ public class NetworkController {
 		Sensor sensor; 
         Query query = new Query(Criteria.where("serial").is(serial));
 		json = "{" + "\"serial: \"" + serial + "\", datetime: \"" + datetime + "\", val: \"" + val + "}";
+
+        // datetime should be in a 10 digit UTC number
+
+	    if (isNumeric(datetime) == false || datetime.length() != 10 ) {
+	    	 return  "Error: datetime " + json +  " datetime should be a UTC 10 digit number.";  
+	    }
+
         sensor = mongoTemplate.findOne(query, Sensor.class);
 		if (sensor != null) {
 			sensor.updateData(datetime, val);
@@ -105,7 +129,8 @@ public class NetworkController {
 		} else {
 			return  "Error: Sensor " + json +  " is not in the data base.";
 		}
-	} // curl -X POST http://localhost:8080/aerialsync/sensors/uploadmeasurement -F "serial=IPI-SENSOR-00000101" -F "datetime=123456" -F "val=1000.1" 
+	} // curl -X POST http://localhost:8080/aerialsync/sensors/uploadmeasurement -F "serial=IPI-SENSOR-00000100" -F "datetime=123456" -F "val=1000.1" 
+	  // curl -X POST http://192.168.6.61:8083/aerialsync/sensors/uploadmeasurement -F "serial=IPI-SENSOR-00000100" -F "datetime=123456" -F "val=1000.1" 
 	
 	@PostMapping("/sensors/downloadjson")
 	public String datasensor( @RequestParam String serial ) {
@@ -125,7 +150,7 @@ public class NetworkController {
 			return  "Error: Sensor " + json +  " is not in data base.";
 		}
 	} // curl -X POST http://localhost:8080/aerialsync/sensors/downloadjson -F "serial=IPI-SENSOR-00000100"  
-
+      // curl -X POST http://192.168.6.61:8083/aerialsync/sensors/downloadjson -F "serial=IPI-SENSOR-00000100" 
 	@PostMapping("/users/greetuser")
 	public String greetuser(@RequestParam String username,
 							     @RequestParam String password,
@@ -140,7 +165,7 @@ public class NetworkController {
 		User u;
         Query query = new Query(Criteria.where("username").is(username));
 		user = mongoTemplate.findOne(query, User.class);
-		json = "{" + "\"user: \"" + user + "\", password: \"" + password +  "\", token: \"" + token  + "}";
+		json = "{" + "\"user: \"" + username + "\", password: \"" + password +  "\", token: \"" + token  + "}";
 
 		if (user == null) {
 			u = mongoTemplate.insert(new User(username, password, token));
@@ -149,6 +174,7 @@ public class NetworkController {
 			return  "User " + json +  " is already in the data base.";
 		}
 	} // curl -X POST "http://localhost:8080/aerialsync/users/greetuser" -F "username=yo"  -F "password=mypass" -F "token=1234" 
+      // curl -X POST "http://192.168.6.61:8083/aerialsync/users/greetuser" -F "username=yo"  -F "password=mypass" -F "token=1234" 
 
 	@PostMapping("/users/registersensor")
 	public String registersensor(@RequestParam String username,
@@ -195,6 +221,7 @@ public class NetworkController {
 			return  "User " + json +  " is not registered in the data base or user´s credentials do not mach.";
 		}
 	} // curl -X POST "http://localhost:8080/aerialsync/users/registersensor" -F "username=yo"  -F "password=mypass" -F "token=1234" -F "serial=IPI-SENSOR-00000101" 
+      // curl -X POST "http://192.168.6.61:8083/aerialsync/users/registersensor" -F "username=yo"  -F "password=mypass" -F "token=1234" -F "serial=IPI-SENSOR-00000100" 
 
 	@PostMapping("/users/removesensor")
 	public String removesensor(@RequestParam String username,
